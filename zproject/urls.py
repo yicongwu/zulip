@@ -39,7 +39,7 @@ i18n_urls = [
     url(r'^accounts/login/local/$', 'zerver.views.dev_direct_login'),
     # We have two entries for accounts/login to allow reverses on the Django
     # view we're wrapping to continue to function.
-    url(r'^accounts/login/',  'zerver.views.login_page',         {'template_name': 'zerver/login.html'}),
+    url(r'^accounts/login/',  'zerver.views.login_page', {'template_name': 'zerver/login.html'}),
     url(r'^accounts/login/',  'django.contrib.auth.views.login', {'template_name': 'zerver/login.html'}),
     url(r'^accounts/logout/', 'zerver.views.logout_then_login'),
     url(r'^accounts/webathena_kerberos_login/', 'zerver.views.webathena_kerberos_login'),
@@ -103,6 +103,16 @@ i18n_urls = [
                                          name='landing-page'),
     url(r'^new-user/$', RedirectView.as_view(url='/hello')),
     url(r'^features/$', TemplateView.as_view(template_name='zerver/features.html')),
+
+    # group -> zercer.views.groups
+    url(r'^group/create/(?P<name>.*)/(?P<owner_id>\d*)$', 'zerver.views.groups.create_group'),
+    url(r'^group/delete/(?P<group_id>\d*)$', 'zerver.views.groups.delete_group'),
+    url(r'^group/show$', 'zerver.views.groups.all_groups'),
+    url(r'^group/showusers$', 'zerver.views.groups.all_users'),
+    url(r'^group/members/(?P<group_id>\d*)$', 'zerver.views.groups.all_members'),
+    url(r'^group/change/name/(?P<group_id>\d*)/(?P<newname>.*)$', 'zerver.views.groups.change_group_name'),
+    url(r'^group/add/member/(?P<group_id>\d*)/(?P<user_id>\d*)$', 'zerver.views.groups.add_group_member'),
+    url(r'^group/delete/member/(?P<group_id>\d*)/(?P<member_id>\d*)$', 'zerver.views.groups.delete_group_member'),
 ]
 
 # Make a copy of i18n_urls so that they appear without prefix for english
@@ -224,6 +234,7 @@ v1_api_and_json_patterns = [
     url(r'^events$', 'zerver.lib.rest.rest_dispatch',
         {'GET': 'zerver.tornadoviews.get_events_backend',
          'DELETE': 'zerver.tornadoviews.cleanup_event_queue'}),
+        
 ]
 
 # Include the dual-use patterns twice

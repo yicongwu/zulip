@@ -549,11 +549,64 @@ def generate_email_token_for_stream():
     # type: () -> text_type
     return generate_random_token(32)
 
+#yicong begin
+class Group(ModelReprMixin, models.Model):
+    MAX_NAME_LENGTH = 60
+    name = models.CharField(max_length=MAX_NAME_LENGTH, db_index=True) # type: text_type
+    owner = models.ForeignKey(UserProfile, db_index=True)#the user who creates the group
+    invite_only = models.NullBooleanField(default=True) # type: Optional[bool]
+    description = models.CharField(max_length=1024, default=u'') # type: text_type
+    date_created = models.DateTimeField(default=timezone.now) # type: datetime.datetime
+    deactivated = models.BooleanField(default=False) # type: bool
+
+    def __unicode__(self):
+        # type: () -> text_type
+        return u"<Group: %s>" % (self.name,)
+
+    def is_public(self):
+        # type: () -> bool
+        # All streams are private in Zephyr mirroring realms.
+        return not self.invite_only
+
+    class Meta(object):
+        unique_together = ("name", "owner")
+
+    @classmethod
+    def create(self, name, owner):
+      
+        group = Group(name=name, owner=owner)
+        group.save()
+        #create recipient
+        recipient = Recipient(type_id=group.id, type=Recipient.GROUP)
+        recipient.save()
+        #add owner's subscription 
+        subscription = Subscription(user_profile=owner, recipient=recipient)
+        subscription.save()
+        return group
+
+    def num_subscribers(self):
+        # type: () -> int
+        return Subscription.objects.filter(
+                recipient__type=Recipient.GROUP,
+                recipient__type_id=self.id,
+                user_profile__is_active=True,
+                active=True
+        ).count()
+
+    # This is group information that is sent to clients
+    def to_dict(self):
+        # type: () -> Dict[str, Any]
+        return dict(name=self.name,
+                    group_id=self.id,
+                    description=self.description,
+                    invite_only=self.invite_only)
+#yicong end
+
 class Stream(ModelReprMixin, models.Model):
     MAX_NAME_LENGTH = 60
     name = models.CharField(max_length=MAX_NAME_LENGTH, db_index=True) # type: text_type
     realm = models.ForeignKey(Realm, db_index=True) # type: Realm
-    invite_only = models.NullBooleanField(default=False) # type: Optional[bool]
+    invite_only = models.NullBooleanField(default=True) # type: Optional[bool]
     # Used by the e-mail forwarder. The e-mail RFC specifies a maximum
     # e-mail length of 254, and our max stream length is 30, so we
     # have plenty of room for the token.
@@ -617,6 +670,7 @@ def valid_stream_name(name):
 # Streams. The recipient table maps a globally unique recipient id
 # (used by the Message table) to the type-specific unique id (the
 # stream id, user_profile id, or huddle id).
+# add group to recipient type by yicong
 class Recipient(ModelReprMixin, models.Model):
     type_id = models.IntegerField(db_index=True) # type: int
     type = models.PositiveSmallIntegerField(db_index=True) # type: int
@@ -624,6 +678,7 @@ class Recipient(ModelReprMixin, models.Model):
     PERSONAL = 1
     STREAM = 2
     HUDDLE = 3
+    GROUP = 4
 
     class Meta(object):
         unique_together = ("type", "type_id")
@@ -632,7 +687,8 @@ class Recipient(ModelReprMixin, models.Model):
     _type_names = {
         PERSONAL: 'personal',
         STREAM:   'stream',
-        HUDDLE:   'huddle' }
+        HUDDLE:   'huddle',
+        GROUP: 'group' }
 
     def type_name(self):
         # type: () -> str
@@ -1530,3 +1586,4 @@ class ScheduledJob(models.Model):
     # Kind if like a ForeignKey, but table is determined by type.
     filter_id = models.IntegerField(null=True) # type: Optional[int]
     filter_string = models.CharField(max_length=100) # type: text_type
+
