@@ -28,18 +28,43 @@ from zerver.models import UserProfile, Stream, Subscription, Group, \
 from collections import defaultdict
 import ujson
 from six.moves import urllib
-
+import simplejson
 import six
 from six import text_type
+from django.views.decorators.csrf import csrf_exempt   
 
+@csrf_exempt 
+def dispatch_group(request):
+    if request.method=='GET':
+        return all_groups(request)
+    elif request.method=='POST':
+        return create_group(request)
+    elif request.method=='DELETE':
+        return delete_group(request)
+    elif request.method=='PATCH':
+        return change_group_name(request)
+    return json_error()
 
-def create_group(request, name, owner_id):
+@csrf_exempt 
+def dispatch_member(request):
+    if request.method=='POST':
+        return add_group_member(request)
+    elif request.method=='DELETE':
+        return delete_group_member(request)
+    return json_error()
+
+def create_group(request):
+    json_data = simplejson.loads(request.body)
+    name = json_data['name']
+    owner_id = json_data['owner_id']
     owner = UserProfile.objects.get(id=owner_id)
     #create group
     group = Group.create(name, owner)
     return json_success()
 
-def delete_group(request, group_id):
+def delete_group(request):
+    json_data = simplejson.loads(request.body)
+    group_id = json_data['group_id']
     group = Group.objects.get(id=group_id)
     recipient = Recipient.objects.get(type_id=group.id, type=Recipient.GROUP)
     #delete related subscription
@@ -63,18 +88,27 @@ def all_members(request, group_id):
     members = Subscription.objects.filter(recipient=recipient)
     return json_success({'members':members.values("user_profile")})
     
-def change_group_name(request, group_id, newname):
+def change_group_name(request):
+    json_data = simplejson.loads(request.body)
+    group_id = json_data['group_id']
+    newname = json_data['newname']
     group=Group.objects.filter(id=group_id)
     group.update(name=newname)
     return json_success()
 
-def delete_group_member(request, group_id, member_id):
+def delete_group_member(request):
+    json_data = simplejson.loads(request.body)
+    group_id = json_data['group_id']
+    member_id = json_data['member_id']
     member = UserProfile.objects.get(id=member_id)
     recipient = Recipient.objects.get(type_id=group_id, type=Recipient.GROUP)
     Subscription.objects.filter(user_profile=member, recipient=recipient).delete()
     return json_success()
 
-def add_group_member(request, group_id, user_id):
+def add_group_member(request):
+    json_data = simplejson.loads(request.body)
+    group_id = json_data['group_id']
+    user_id = json_data['user_id']
     user = UserProfile.objects.get(id=user_id)
     recipient = Recipient.objects.get(type_id=group_id, type=Recipient.GROUP)
     subscription = Subscription(user_profile=user, recipient=recipient)

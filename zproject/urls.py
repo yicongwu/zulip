@@ -105,14 +105,24 @@ i18n_urls = [
     url(r'^features/$', TemplateView.as_view(template_name='zerver/features.html')),
 
     # group -> zercer.views.groups
-    url(r'^group/create/(?P<name>.*)/(?P<owner_id>\d*)$', 'zerver.views.groups.create_group'),
-    url(r'^group/delete/(?P<group_id>\d*)$', 'zerver.views.groups.delete_group'),
-    url(r'^group/show$', 'zerver.views.groups.all_groups'),
+    url(r'^group$', 'zerver.views.groups.dispatch_group'),
+       # {'GET': 'zerver.views.groups.all_groups',
+       # 'POST': 'zerver.views.groups.create_group',
+       # 'DELETE':'zerver.views.groups.delete_group',
+       # 'PATCH': 'zerver.views.groups.change_group_name'}),
+
+    url(r'^group/member$', 'zerver.views.groups.dispatch_member'), 
+        #{'GET': 'zerver.views.groups.all_members',
+        #'POST': 'zerver.views.groups.add_group_member',
+        #'DELETE':'zerver.views.groups.delete_group_member',}),  
+   # url(r'^group/create/(?P<name>.*)/(?P<owner_id>\d*)$', 'zerver.views.groups.create_group'),
+   # url(r'^group/delete/(?P<group_id>\d*)$', 'zerver.views.groups.delete_group'),
+   # url(r'^group/show$', 'zerver.views.groups.all_groups'),
+    url(r'^group/member/(?P<group_id>\d*)$', 'zerver.views.groups.all_members'),
     url(r'^group/showusers$', 'zerver.views.groups.all_users'),
-    url(r'^group/members/(?P<group_id>\d*)$', 'zerver.views.groups.all_members'),
-    url(r'^group/change/name/(?P<group_id>\d*)/(?P<newname>.*)$', 'zerver.views.groups.change_group_name'),
-    url(r'^group/add/member/(?P<group_id>\d*)/(?P<user_id>\d*)$', 'zerver.views.groups.add_group_member'),
-    url(r'^group/delete/member/(?P<group_id>\d*)/(?P<member_id>\d*)$', 'zerver.views.groups.delete_group_member'),
+   # url(r'^group/change/name/(?P<group_id>\d*)/(?P<newname>.*)$', 'zerver.views.groups.change_group_name'),
+   # url(r'^group/add/member/(?P<group_id>\d*)/(?P<user_id>\d*)$', 'zerver.views.groups.add_group_member'),
+   # url(r'^group/delete/member/(?P<group_id>\d*)/(?P<member_id>\d*)$', 'zerver.views.groups.delete_group_member'),
 ]
 
 # Make a copy of i18n_urls so that they appear without prefix for english
