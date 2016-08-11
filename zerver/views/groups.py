@@ -58,14 +58,21 @@ def create_group(request):
     name = json_data['name']
     owner_id = json_data['owner_id']
     owner = UserProfile.objects.get(id=owner_id)
+    #whether the group has been created
+    if (Group.objects.filter(name=name, owner=owner).count()!=0):
+        return json_error("The group exists !")
     #create group
     group = Group.create(name, owner)
-    return json_success()
+    return json_success({'group_id':Group.objects.get(name=name, owner_id=owner_id).id,
+                        'name':Group.objects.get(name=name, owner_id=owner_id).name
+    })
 
 def delete_group(request):
     json_data = simplejson.loads(request.body)
-    group_id = json_data['group_id']
-    group = Group.objects.get(id=group_id)
+    #group_id = json_data['group_id']
+    name = json_data['name']
+    owner_id = json_data['owner_id']
+    group = Group.objects.get(name=name, owner_id=owner_id)
     recipient = Recipient.objects.get(type_id=group.id, type=Recipient.GROUP)
     #delete related subscription
     Subscription.objects.filter(recipient=recipient).delete()
@@ -77,7 +84,7 @@ def delete_group(request):
 
 def all_groups(request):
     return json_success({'group_id':Group.objects.all().values("id"),
-                            'group_name':Group.objects.all().values("name")
+                            'name':Group.objects.all().values("name")
     })
 
 def all_users(request):
@@ -89,28 +96,41 @@ def all_members(request, group_id):
     return json_success({'members':members.values("user_profile")})
     
 def change_group_name(request):
-    json_data = simplejson.loads(request.body)
-    group_id = json_data['group_id']
-    newname = json_data['newname']
-    group=Group.objects.filter(id=group_id)
-    group.update(name=newname)
+    try:
+        json_data = simplejson.loads(request.body)
+        group_id = json_data['group_id']
+        newname = json_data['newname']
+        group = Group.objects.get(id=group_id)
+        #check newname availablility
+        if (Group.objects.filter(name=newname, owner=group.owner).count()!=0):
+            return json_error("Group name has been used!")
+        group.name = newname
+        group.save()
+    except:
+        return json_error("No such group!")
     return json_success()
 
 def delete_group_member(request):
     json_data = simplejson.loads(request.body)
     group_id = json_data['group_id']
-    member_id = json_data['member_id']
-    member = UserProfile.objects.get(id=member_id)
-    recipient = Recipient.objects.get(type_id=group_id, type=Recipient.GROUP)
-    Subscription.objects.filter(user_profile=member, recipient=recipient).delete()
+    member_id = json_data['user_id']
+    try:
+        member = UserProfile.objects.get(id=member_id)
+        recipient = Recipient.objects.get(type_id=group_id, type=Recipient.GROUP)
+        Subscription.objects.filter(user_profile=member, recipient=recipient).delete()
+    except:
+        return json_error("No such group or member!")
     return json_success()
 
 def add_group_member(request):
     json_data = simplejson.loads(request.body)
     group_id = json_data['group_id']
     user_id = json_data['user_id']
-    user = UserProfile.objects.get(id=user_id)
-    recipient = Recipient.objects.get(type_id=group_id, type=Recipient.GROUP)
-    subscription = Subscription(user_profile=user, recipient=recipient)
-    subscription.save()
+    try:
+        user = UserProfile.objects.get(id=user_id)
+        recipient = Recipient.objects.get(type_id=group_id, type=Recipient.GROUP)
+        subscription = Subscription(user_profile=user, recipient=recipient)
+        subscription.save()
+    except:
+        return json_error("No such group or user!")
     return json_success()
