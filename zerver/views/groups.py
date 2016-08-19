@@ -21,8 +21,8 @@ from zerver.lib.actions import bulk_remove_subscriptions, \
 from zerver.lib.response import json_success, json_error, json_response
 from zerver.lib.validator import check_string, check_list, check_dict, \
     check_bool, check_variable_type
-from zerver.models import UserProfile, Stream, Subscription, Group, \
-    Recipient, get_recipient, get_stream, bulk_get_streams, \
+from zerver.models import UserProfile, Stream, Subscription, Group, UserMessage,\
+    Recipient, get_recipient, get_stream, bulk_get_streams, Message, Client, \
     bulk_get_recipients, valid_stream_name, get_active_user_dicts_in_realm
 
 from collections import defaultdict
@@ -32,6 +32,10 @@ import simplejson
 import six
 from six import text_type
 from django.views.decorators.csrf import csrf_exempt   
+from zerver.views.messages import send_message_backend, get_old_messages_backend
+from zerver.lib.actions import check_send_message
+
+import pdb;
 
 @csrf_exempt 
 def dispatch_group(request):
@@ -88,7 +92,7 @@ def all_groups(request):
     })
 
 def all_users(request):
-    return json_success({'UserProfile':UserProfile.objects.all().values("id")})
+    return json_success({'UserProfile':[UserProfile.objects.all().values("id"),UserProfile.objects.all().values("full_name")]})
 
 def all_members(request, group_id):
     recipient = Recipient.objects.get(type_id=group_id, type=Recipient.GROUP)
@@ -134,3 +138,74 @@ def add_group_member(request):
     except:
         return json_error("No such group or user!")
     return json_success()
+
+
+def get_a_user_profile(request, user_id):
+    try:
+        user_profile = UserProfile.objects.get(id=user_id)
+    except:
+        return json_error("No such user.")
+
+    return json_success({'user_profile':user_profile.realm.id})
+
+@csrf_exempt 
+def send_message_to_memebers(request):
+    if request.method != 'POST' :
+        return json_error("Wrong Method.")
+    json_data = simplejson.loads(request.body)
+    user_id = json_data['user_id']
+    message_type_name = json_data['message_type_name']
+    recipient_id = json_data['recipient_id']
+    message_content = json_data['message_content']
+    subject_name = json_data['subject_name']
+    try:
+        user_profile = UserProfile.objects.get(id=user_id)
+        if message_type_name == group :
+            message_to = Recipient.objects.get(type_id=recipient_id, type=Recipient.GROUP)
+            if (Subscription.objects.filter(recipient=message_to, user_profile=user_profile).count()==0):
+                return json_error("You are not the member of the group!")
+        client = Client.objects.get(id=3)
+    except:
+        return json_error("No such user or group")
+        #skip send_message_backend in order to avoid data structure inconsistence
+    result_id = check_send_message(user_profile, client, message_type_name, message_to, subject_name, message_content)
+    return json_success({"id":result_id})
+
+def get_group_messages(request, group_id):
+    recipient = Recipient.objects.get(type_id=group_id, type=Recipient.GROUP)
+    return json_success({'message':Message.objects.filter(recipient=recipient).values("content")})
+
+def get_client_name(request):
+    return json_success({'client_id':Client.objects.all().values("id"), 'client_name':Client.objects.all().values("name")})
+
+# get num_before messages before anchor and num_after messages after anchor
+def get_user_messages(request, user_id):
+    request
+    try:
+        user_profile = UserProfile.objects.get(id=user_id)
+    except:
+        return json_error("No such user.")
+    result = get_old_messages_backend(request, user_profile)
+    return result
+
+def get_one_message(message_id):
+    try:
+        message = Message.objects.get(id=message_id)
+    except:
+        return None
+    return message
+
+#delete group messages
+def delete_group_message(request):
+    json_data = simplejson.loads(request.body)
+    group_id = json_data['group_id']
+    #user_id = json_date['user_id']
+    try:
+        #if user_id > 0:
+            #user_profile = UserProfile.objects.get(id=user_id)
+        recipient = Recipient.objects.get(type_id=group_id, type=Recipient.GROUP)
+    except:
+        return json_error("No such group or user")
+    messages_ids = Message.objects.filter(recipient=recipient).values('id')
+    user_messages = UserMessage.objects.filter(message__id__in = message_ids)
+    user_messages.delete()

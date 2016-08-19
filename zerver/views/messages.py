@@ -45,7 +45,7 @@ import datetime
 
 from six.moves import map
 import six
-
+import pdb
 class BadNarrowOperator(JsonableError):
     def __init__(self, desc, status_code=400):
         self.desc = desc
@@ -757,7 +757,6 @@ def send_message_backend(request, user_profile,
         sender = mirror_sender
     else:
         sender = user_profile
-
     ret = check_send_message(sender, client, message_type_name, message_to,
                              subject_name, message_content, forged=forged,
                              forged_timestamp = request.POST.get('time'),

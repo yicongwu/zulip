@@ -1035,7 +1035,7 @@ class Message(ModelReprMixin, models.Model):
 
         if recipient_type == Recipient.STREAM:
             display_type = "stream"
-        elif recipient_type in (Recipient.HUDDLE, Recipient.PERSONAL):
+        elif recipient_type in (Recipient.HUDDLE, Recipient.PERSONAL, Recipient.GROUP):#add group by yicong
             assert not isinstance(display_recipient, text_type)
             display_type = "private"
             if len(display_recipient) == 1:

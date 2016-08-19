@@ -69,6 +69,8 @@ from zerver.lib.upload import attachment_url_re, attachment_url_to_path_id, \
     claim_attachment, delete_message_image
 from zerver.lib.str_utils import NonBinaryStr
 
+import pdb
+
 import DNS
 import ujson
 import time
@@ -636,7 +638,9 @@ def do_send_messages(messages):
             # personals to yourself or to someone else, respectively.
             assert((len(message['recipients']) == 1) or (len(message['recipients']) == 2))
         elif (message['message'].recipient.type == Recipient.STREAM or
-              message['message'].recipient.type == Recipient.HUDDLE):
+              message['message'].recipient.type == Recipient.HUDDLE or
+              # add by yicong : group message
+              message['message'].recipient.type == Recipient.GROUP):
             # We use select_related()/only() here, while the PERSONAL case above uses
             # get_user_profile_by_id() to get UserProfile objects from cache.  Streams will
             # typically have more recipients than PMs, so get_user_profile_by_id() would be
@@ -943,9 +947,12 @@ def check_message(sender, client, message_type_name, message_to,
                   sender_queue_id=None):
     # type: (UserProfile, Client, str, Sequence[text_type], text_type, text_type, Optional[Realm], bool, Optional[float], Optional[UserProfile], Optional[int], Optional[str]) -> Dict[str, Any]
     stream = None
+
     if not message_to and message_type_name == 'stream' and sender.default_sending_stream:
         # Use the users default stream
         message_to = [sender.default_sending_stream.name]
+    elif message_type_name == 'group':
+        q=1
     elif len(message_to) == 0:
         raise JsonableError(_("Message must have recipients"))
     if len(message_content.strip()) == 0:
@@ -1006,9 +1013,11 @@ def check_message(sender, client, message_type_name, message_to,
         except ValidationError as e:
             assert isinstance(e.messages[0], six.string_types)
             raise JsonableError(e.messages[0])
+    #add message_type_name==group by yicong
+    elif message_type_name == 'group':
+         recipient = message_to
     else:
         raise JsonableError(_("Invalid message type"))
-
     message = Message()
     message.sender = sender
     message.content = message_content
@@ -1029,7 +1038,6 @@ def check_message(sender, client, message_type_name, message_to,
         id = already_sent_mirrored_message_id(message)
         if id is not None:
             return {'message': id}
-
     return {'message': message, 'stream': stream, 'local_id': local_id, 'sender_queue_id': sender_queue_id}
 
 def internal_prep_message(sender_email, recipient_type_name, recipients,

@@ -317,6 +317,7 @@ INSTALLED_APPS = [
     'guardian',
     'pipeline',
     'zerver',
+    'django_extensions',
 ] + EXTRA_INSTALLED_APPS
 
 ZILENCER_ENABLED = 'zilencer' in INSTALLED_APPS
@@ -995,3 +996,8 @@ if PRODUCTION:
 PROFILE_ALL_REQUESTS = False
 
 CROSS_REALM_BOT_EMAILS = set(('feedback@zulip.com', 'notification-bot@zulip.com'))
+
+GRAPH_MODELS = {
+  'all_applications': True,
+  'group_models': True,
+}

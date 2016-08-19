@@ -49,7 +49,7 @@ describe('group class tests', function(){
 })
 
 
-// tests for group members
+// tests for group members operations
 describe('group members tests', function(){
     var user_id = 18
     var group_id = 3
