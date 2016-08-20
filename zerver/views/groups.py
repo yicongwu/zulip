@@ -160,7 +160,7 @@ def send_message_to_memebers(request):
     subject_name = json_data['subject_name']
     try:
         user_profile = UserProfile.objects.get(id=user_id)
-        if message_type_name == group :
+        if message_type_name == 'group':
             message_to = Recipient.objects.get(type_id=recipient_id, type=Recipient.GROUP)
             if (Subscription.objects.filter(recipient=message_to, user_profile=user_profile).count()==0):
                 return json_error("You are not the member of the group!")
@@ -173,7 +173,7 @@ def send_message_to_memebers(request):
 
 def get_group_messages(request, group_id):
     recipient = Recipient.objects.get(type_id=group_id, type=Recipient.GROUP)
-    return json_success({'message':Message.objects.filter(recipient=recipient).values("content")})
+    return json_success({'messages':Message.objects.filter(recipient=recipient).values("content")})
 
 def get_client_name(request):
     return json_success({'client_id':Client.objects.all().values("id"), 'client_name':Client.objects.all().values("name")})
@@ -196,7 +196,10 @@ def get_one_message(message_id):
     return message
 
 #delete group messages
+@csrf_exempt
 def delete_group_message(request):
+    if request.method != 'DELETE':
+        return json_error("Wrong method")
     json_data = simplejson.loads(request.body)
     group_id = json_data['group_id']
     #user_id = json_date['user_id']
@@ -206,6 +209,11 @@ def delete_group_message(request):
         recipient = Recipient.objects.get(type_id=group_id, type=Recipient.GROUP)
     except:
         return json_error("No such group or user")
-    messages_ids = Message.objects.filter(recipient=recipient).values('id')
-    user_messages = UserMessage.objects.filter(message__id__in = message_ids)
+    messages = Message.objects.filter(recipient=recipient)
+    #messages_ids = messages.values('id')
+    user_messages = UserMessage.objects.filter(message__in = messages)
+    #delete related messages in UserMessage
     user_messages.delete()
+    #delete related messages in Message
+    messages.delete()
+    return json_response(res_type="success", msg="All group messages are deleted!")
