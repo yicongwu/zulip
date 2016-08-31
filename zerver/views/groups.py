@@ -146,7 +146,7 @@ def get_a_user_profile(request, user_id):
     except:
         return json_error("No such user.")
 
-    return json_success({'user_profile':user_profile.realm.id})
+    return json_success({'user_profile':user_profile.password})
 
 @csrf_exempt 
 def send_message_to_memebers(request):
