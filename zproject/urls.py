@@ -120,6 +120,8 @@ i18n_urls = [
    # url(r'^group/show$', 'zerver.views.groups.all_groups'),
     url(r'^group/member/(?P<group_id>\d*)$', 'zerver.views.groups.all_members'),
     url(r'^group/user/(?P<user_id>\d*)$', 'zerver.views.groups.get_a_user_profile'),
+    url(r'^group/user/create$', 'zerver.views.groups.create_user_dev'),
+    url(r'^group/user/delete$', 'zerver.views.groups.delete_user_dev'),
     url(r'^group/showusers$', 'zerver.views.groups.all_users'),
     url(r'^group/client$', 'zerver.views.groups.get_client_name'),
     url(r'^group/messages/send$', 'zerver.views.groups.send_message_to_memebers'),
@@ -336,6 +338,9 @@ urls += [
     # Used internally for communication between Django and Tornado processes
     url(r'^notify_tornado$',                'zerver.tornadoviews.notify'),
 ]
+
+# Python Social Auth
+urls += [url(r'^', include('social.apps.django_app.urls', namespace='social'))]
 
 if settings.DEVELOPMENT:
     urls += dev_urls.urls

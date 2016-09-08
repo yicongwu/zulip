@@ -966,6 +966,18 @@ else:
     POPULATE_PROFILE_VIA_LDAP = 'zproject.backends.ZulipLDAPAuthBackend' in AUTHENTICATION_BACKENDS or POPULATE_PROFILE_VIA_LDAP
 
 ########################################################################
+# GITHUB AUTHENTICATION SETTINGS
+########################################################################
+
+SOCIAL_AUTH_GITHUB_KEY = '9098542377226527fb74'
+#is set in /etc/zulip/settings.py
+SOCIAL_AUTH_GITHUB_SECRET = 'c9ecdf057a35b283f47b37355c6591f731316418' #get_secret('social_auth_github_secret')
+SOCIAL_AUTH_LOGIN_ERROR_URL = '/login/'
+SOCIAL_AUTH_GITHUB_SCOPE = ['email']
+SOCIAL_AUTH_GITHUB_TEAM_ID = None
+SOCIAL_AUTH_GITHUB_ORG_NAME = None
+
+########################################################################
 # EMAIL SETTINGS
 ########################################################################
 

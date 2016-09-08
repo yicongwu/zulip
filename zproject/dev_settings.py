@@ -6,7 +6,8 @@ from .prod_settings_template import *
 LOCAL_UPLOADS_DIR = 'var/uploads'
 EXTERNAL_HOST = 'localhost:9991'
 ALLOWED_HOSTS = ['localhost']
-AUTHENTICATION_BACKENDS = ('zproject.backends.DevAuthBackend',)
+AUTHENTICATION_BACKENDS = ('zproject.backends.DevAuthBackend', 'zproject.backends.EmailAuthBackend',)
+AUTHENTICATION_BACKENDS += ('zproject.backends.GitHubAuthBackend',)
 # Add some of the below if you're testing other backends
 # AUTHENTICATION_BACKENDS = ('zproject.backends.EmailAuthBackend',
 #                            'zproject.backends.GoogleMobileOauth2Backend',)

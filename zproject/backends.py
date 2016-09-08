@@ -1,10 +1,15 @@
 from __future__ import absolute_import
 
+import logging
+from typing import Any, Set, Tuple, Optional
+from six import text_type
+
 from django.contrib.auth.backends import RemoteUserBackend
 from django.conf import settings
+from django.http import HttpResponse
 import django.contrib.auth
 
-from django_auth_ldap.backend import LDAPBackend
+from django_auth_ldap.backend import LDAPBackend, _LDAPUser
 from zerver.lib.actions import do_create_user
 
 from zerver.models import UserProfile, Realm, get_user_profile_by_id, \
@@ -13,6 +18,10 @@ from zerver.models import UserProfile, Realm, get_user_profile_by_id, \
 
 from apiclient.sample_tools import client as googleapiclient
 from oauth2client.crypt import AppIdentityError
+from social.backends.github import GithubOAuth2, GithubOrganizationOAuth2, \
+    GithubTeamOAuth2
+from social.exceptions import AuthFailed
+from django.contrib.auth import authenticate
 
 def password_auth_enabled(realm):
     if realm is not None:
@@ -31,12 +40,18 @@ def password_auth_enabled(realm):
 def dev_auth_enabled():
     for backend in django.contrib.auth.get_backends():
         if isinstance(backend, DevAuthBackend):
-            return True
+            return True  #yicong_login_test
     return False
 
 def google_auth_enabled():
     for backend in django.contrib.auth.get_backends():
         if isinstance(backend, GoogleMobileOauth2Backend):
+            return True
+    return False
+
+def github_auth_enabled():
+    for backend in django.contrib.auth.get_backends():
+        if isinstance(backend, GitHubAuthBackend):
             return True
     return False
 
@@ -62,6 +77,60 @@ class ZulipAuthMixin(object):
             return get_user_profile_by_id(user_profile_id)
         except UserProfile.DoesNotExist:
             return None
+
+class SocialAuthMixin(ZulipAuthMixin):
+    def get_email_address(self, *args, **kwargs):
+        # type: (*Any, **Any) -> text_type
+        raise NotImplementedError
+
+    def get_full_name(self, *args, **kwargs):
+        # type: (*Any, **Any) -> text_type
+        raise NotImplementedError
+
+    def authenticate(self, *args, **kwargs):
+        # type: (*Any, **Any) -> Optional[UserProfile]
+        return_data = kwargs.get('return_data', {})
+
+        email_address = self.get_email_address(*args, **kwargs)
+        if not email_address:
+            return None
+
+        try:
+            user_profile = get_user_profile_by_email(email_address)
+        except UserProfile.DoesNotExist:
+            return_data["valid_attestation"] = True
+            return None
+
+        if not user_profile.is_active:
+            return_data["inactive_user"] = True
+            return None
+
+        if user_profile.realm.deactivated:
+            return_data["inactive_realm"] = True
+            return None
+
+        return user_profile
+
+    def process_do_auth(self, user_profile, *args, **kwargs):
+        # type: (UserProfile, *Any, **Any) -> Optional[HttpResponse]
+        # This function needs to be imported from here due to the cyclic
+        # dependency.
+        from zerver.views import login_or_register_remote_user
+
+        return_data = kwargs.get('return_data', {})
+
+        inactive_user = return_data.get('inactive_user')
+        inactive_realm = return_data.get('inactive_realm')
+
+        if inactive_user or inactive_realm:
+            return None
+
+        request = self.strategy.request  # type: ignore # This comes from Python Social Auth.
+        email_address = self.get_email_address(*args, **kwargs)
+        full_name = self.get_full_name(*args, **kwargs)
+
+        return login_or_register_remote_user(request, email_address,
+                                             user_profile, full_name)
 
 class ZulipDummyBackend(ZulipAuthMixin):
     """
@@ -208,3 +277,47 @@ class DevAuthBackend(ZulipAuthMixin):
 
     def authenticate(self, username, return_data=None):
         return common_get_active_user_by_email(username, return_data=return_data)
+
+class GitHubAuthBackend(SocialAuthMixin, GithubOAuth2):
+    def get_email_address(self, *args, **kwargs):
+        # type: (*Any, **Any) -> Optional[text_type]
+        try:
+            return kwargs['response']['email']
+        except KeyError:
+            return None
+
+    def get_full_name(self, *args, **kwargs):
+        # type: (*Any, **Any) -> text_type
+        try:
+            return kwargs['response']['name']
+        except KeyError:
+            return ''
+
+    def do_auth(self, *args, **kwargs):
+        # type: (*Any, **Any) -> Optional[UserProfile]
+        kwargs['return_data'] = {}
+        user_profile = None
+
+        team_id = settings.SOCIAL_AUTH_GITHUB_TEAM_ID
+        org_name = settings.SOCIAL_AUTH_GITHUB_ORG_NAME
+
+        if (team_id is None and org_name is None):
+            user_profile = GithubOAuth2.do_auth(self, *args, **kwargs)
+
+        elif (team_id):
+            backend = GithubTeamOAuth2(self.strategy, self.redirect_uri)
+            try:
+                user_profile = backend.do_auth(*args, **kwargs)
+            except AuthFailed:
+                logging.info("User profile not member of team.")
+                user_profile = None
+
+        elif (org_name):
+            backend = GithubOrganizationOAuth2(self.strategy, self.redirect_uri)
+            try:
+                user_profile = backend.do_auth(*args, **kwargs)
+            except AuthFailed:
+                logging.info("User profile not member of organisation.")
+                user_profile = None
+
+        return self.process_do_auth(user_profile, *args, **kwargs)

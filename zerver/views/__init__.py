@@ -589,6 +589,7 @@ def login_page(request, **kwargs):
 
     return template_response
 
+@csrf_exempt
 def dev_direct_login(request, **kwargs):
     # type: (HttpRequest, **Any) -> HttpResponse
     # This function allows logging in without a password and should only be called in development environments.
