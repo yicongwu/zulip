@@ -137,13 +137,13 @@ def all_members(request, group_id):
 
 @login_required
 def delete_group_member(request):
-    #check ownership of the group
-    if (request.user.id != group.owner.id):
-        return json_error("You are not the owner of this group")
     json_data = simplejson.loads(request.body)
     group_id = json_data['group_id']
     member_id = json_data['user_id']
     try:
+        #check ownership of the group
+        if (Group.objects.filter(id=group_id, owner=request.user).count()==0):
+            return json_error("You are not the owner of this group")
         member = UserProfile.objects.get(id=member_id)
         recipient = Recipient.objects.get(type_id=group_id, type=Recipient.GROUP)
         Subscription.objects.filter(user_profile=member, recipient=recipient).delete()
@@ -153,29 +153,29 @@ def delete_group_member(request):
 
 @login_required
 def add_group_member(request):
-    #check ownership of the group
-    if (request.user.id != group.owner.id):
-        return json_error("You are not the owner of this group")
     json_data = simplejson.loads(request.body)
     group_id = json_data['group_id']
     user_id = json_data['user_id']
+
     try:
-        user = UserProfile.objects.get(id=user_id)
+        newmember = UserProfile.objects.get(id=user_id)
+        #check ownership of the group
+        if (Group.objects.filter(id=group_id, owner=request.user).count()==0):
+            return json_error("You are not the owner of this group")
         recipient = Recipient.objects.get(type_id=group_id, type=Recipient.GROUP)
-        subscription = Subscription(user_profile=user, recipient=recipient)
+        subscription = Subscription(user_profile=newmember, recipient=recipient)
         subscription.save()
     except:
         return json_error("No such group or user!")
     return json_success()
 
-@login_required
 def get_a_user_profile(request, user_id):
     try:
         user_profile = UserProfile.objects.get(id=user_id)
     except:
         return json_error("No such user.")
 
-    return json_success({'user_profile':user_profile.realm.name})
+    return json_success({'user_profile':user_profile.realm.name, 'realm':Realm.objects.filter().values("name")})
 
 @csrf_exempt
 @login_required
@@ -199,7 +199,7 @@ def send_message_to_memebers(request):
     except:
         return json_error("No such user or group")
         #skip send_message_backend in order to avoid data structure inconsistence
-    result_id = check_send_message(user_profile, client, message_type_name, message_to, subject_name, message_content)
+    result_id = check_send_message(request.user, client, message_type_name, message_to, subject_name, message_content)
     return json_success({"id":result_id})
 
 def get_group_messages(request, group_id):
@@ -212,8 +212,8 @@ def get_client_name(request):
 
 # get num_before messages before anchor and num_after messages after anchor
 @login_required
-def get_user_messages(request, user_id):
-    user_profile=request.user
+def get_user_messages(request):
+    user_profile = request.user
     result = get_old_messages_backend(request, user_profile)
     return result
 

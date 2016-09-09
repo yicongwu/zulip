@@ -127,7 +127,7 @@ i18n_urls = [
     url(r'^group/messages/send$', 'zerver.views.groups.send_message_to_memebers'),
     url(r'^group/messages/delete$', 'zerver.views.groups.delete_group_message'),
     url(r'^group/messages/(?P<group_id>\d*)$', 'zerver.views.groups.get_group_messages'),
-    url(r'^group/user_messages/(?P<user_id>\d*)$', 'zerver.views.groups.get_user_messages'),
+    url(r'^group/user_messages/$', 'zerver.views.groups.get_user_messages'),
    # url(r'^group/change/name/(?P<group_id>\d*)/(?P<newname>.*)$', 'zerver.views.groups.change_group_name'),
    # url(r'^group/add/member/(?P<group_id>\d*)/(?P<user_id>\d*)$', 'zerver.views.groups.add_group_member'),
    # url(r'^group/delete/member/(?P<group_id>\d*)/(?P<member_id>\d*)$', 'zerver.views.groups.delete_group_member'),

@@ -567,6 +567,7 @@ def finish_google_oauth2(request):
     user_profile = authenticate(username=email_address, use_dummy_backend=True)
     return login_or_register_remote_user(request, email_address, user_profile, full_name)
 
+@csrf_exempt
 def login_page(request, **kwargs):
     # type: (HttpRequest, **Any) -> HttpResponse
     extra_context = kwargs.pop('extra_context', {})
