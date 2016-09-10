@@ -128,6 +128,9 @@ class SocialAuthMixin(ZulipAuthMixin):
         request = self.strategy.request  # type: ignore # This comes from Python Social Auth.
         email_address = self.get_email_address(*args, **kwargs)
         full_name = self.get_full_name(*args, **kwargs)
+        # yicong add no fullname situation
+        #if full_name==None :
+        #    full_name = 
 
         return login_or_register_remote_user(request, email_address,
                                              user_profile, full_name)

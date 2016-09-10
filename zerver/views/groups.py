@@ -24,7 +24,7 @@ from zerver.lib.validator import check_string, check_list, check_dict, \
 from zerver.models import UserProfile, Stream, Subscription, Group, UserMessage,\
     Recipient, get_recipient, get_stream, bulk_get_streams, Message, Client, \
     bulk_get_recipients, valid_stream_name, get_active_user_dicts_in_realm, \
-    email_to_username, Realm
+    email_to_username, Realm, get_unique_open_realm
 
 from collections import defaultdict
 import ujson
@@ -37,7 +37,8 @@ from zerver.views.messages import send_message_backend, get_old_messages_backend
 from zerver.lib.actions import check_send_message
 from django.contrib.auth.decorators import login_required 
 
-import pdb;
+import pdb
+
 
 @csrf_exempt 
 def dispatch_group(request):
@@ -175,7 +176,7 @@ def get_a_user_profile(request, user_id):
     except:
         return json_error("No such user.")
 
-    return json_success({'user_profile':user_profile.realm.name, 'realm':Realm.objects.filter().values("name")})
+    return json_success({'user_profile':user_profile.realm.name, 'realm':Realm.objects.filter(deactivated=False).values("name")})
 
 @csrf_exempt
 @login_required
@@ -278,3 +279,6 @@ def delete_user_dev(request):
     name = UserProfile.objects.get(id=user_id).full_name
     UserProfile.objects.filter(id=user_id).delete()
     return json_success({'name':name})
+
+def get_unique_open_realm_test(request):
+    return json_success({'realm':get_unique_open_realm().name})

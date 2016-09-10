@@ -76,6 +76,8 @@ import os
 
 from zproject.jinja2 import render_to_response
 
+import pdb
+
 def name_changes_disabled(realm):
     # type: (Optional[Realm]) -> bool
     if realm is None:
@@ -779,18 +781,22 @@ def accounts_home(request):
     # type: (HttpRequest) -> HttpResponse
     if request.method == 'POST':
         form = create_homepage_form(request, user_info=request.POST)
+        #pdb.set_trace()
         if form.is_valid():
             email = form.cleaned_data['email']
             send_registration_completion_email(email, request)
             return HttpResponseRedirect(reverse('send_confirm', kwargs={'email': email}))
         try:
             email = request.POST['email']
+            #pdb.set_trace()
             # Note: We don't check for uniqueness
             is_inactive(email)
+            #pdb.set_trace()
         except ValidationError:
             return redirect_to_email_login_url(email)
     else:
         form = create_homepage_form(request)
+    #pdb.set_trace()
     return render_to_response('zerver/accounts_home.html',
                               {'form': form, 'current_url': request.get_full_path},
                               request=request)
