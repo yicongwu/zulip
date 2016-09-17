@@ -1587,3 +1587,42 @@ class ScheduledJob(models.Model):
     filter_id = models.IntegerField(null=True) # type: Optional[int]
     filter_string = models.CharField(max_length=100) # type: text_type
 
+#add Association table to match email with te third party account by yicong
+class Association(models.Model):
+    #The email property is corresponding to email address in UserProfile 
+    email = models.EmailField(blank=False, db_index=True, unique=True)
+    #Represent the name of the third party
+    account_type = models.CharField(max_length=100)
+    #it is the id in the third party system
+    account_id = models.CharField(max_length=100)
+    
+    @staticmethod
+    def get_email_by_account(account_type, account_id):
+        try:
+            email = Association.objects.get(account_type=account_type, account_id=account_id).email
+        except:
+            return None
+        return email
+
+    @staticmethod
+    def delete_association_by_email(email):
+    # delete the association, succeed return 1 , failure return None
+        try:
+            association = Association.objects.filter(email=email)
+        except:
+            return None
+        if (association.count()>0):
+            association.delete()
+        else:
+            return None
+        return 1
+
+    @staticmethod
+    def create_association(email, account_type, account_id):
+    # create the association, succeed return association , failure return None
+        try:
+            association = Association(email=email, account_type=account_type, account_id=account_id)
+            association.save()
+        except:
+            return None
+        return association

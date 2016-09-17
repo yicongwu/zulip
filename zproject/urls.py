@@ -104,6 +104,7 @@ i18n_urls = [
     url(r'^new-user/$', RedirectView.as_view(url='/hello')),
     url(r'^features/$', TemplateView.as_view(template_name='zerver/features.html')),
 
+    # added by yicong
     # group -> zercer.views.groups
     url(r'^group$', 'zerver.views.groups.dispatch_group'),
        # {'GET': 'zerver.views.groups.all_groups',
@@ -132,6 +133,8 @@ i18n_urls = [
    # url(r'^group/change/name/(?P<group_id>\d*)/(?P<newname>.*)$', 'zerver.views.groups.change_group_name'),
    # url(r'^group/add/member/(?P<group_id>\d*)/(?P<user_id>\d*)$', 'zerver.views.groups.add_group_member'),
    # url(r'^group/delete/member/(?P<group_id>\d*)/(?P<member_id>\d*)$', 'zerver.views.groups.delete_group_member'),
+    url(r'^login/baidu/$', 'zerver.views.baidu.start_baidu_oauth2'),
+    url(r'^login/baidu/complete/$', 'zerver.views.baidu.finish_baidu_oauth2'),  
 ]
 
 # Make a copy of i18n_urls so that they appear without prefix for english
