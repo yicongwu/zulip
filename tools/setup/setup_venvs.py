@@ -14,10 +14,10 @@ def main():
     # type: () -> None
     PY2_DEV_REQS_FILE = os.path.join(ZULIP_PATH, "requirements", "py2_dev.txt")
     setup_virtualenv("/srv/zulip-venv", PY2_DEV_REQS_FILE, patch_activate_script=True)
-
-    PY3_DEV_REQS_FILE = os.path.join(ZULIP_PATH, "requirements", "py3_dev.txt")
-    setup_virtualenv("/srv/zulip-py3-venv", PY3_DEV_REQS_FILE, patch_activate_script=True,
-                     virtualenv_args=['-p', 'python3'])
+#comments by yicong
+    #PY3_DEV_REQS_FILE = os.path.join(ZULIP_PATH, "requirements", "py3_dev.txt")
+    #setup_virtualenv("/srv/zulip-py3-venv", PY3_DEV_REQS_FILE, patch_activate_script=True,
+                #     virtualenv_args=['-p', 'python3'])
 
 if __name__ == "__main__":
     main()
