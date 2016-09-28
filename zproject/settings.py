@@ -317,7 +317,7 @@ INSTALLED_APPS = [
     'guardian',
     'pipeline',
     'zerver',
-    'django_extensions',
+  #  'django_extensions',
 ] + EXTRA_INSTALLED_APPS
 
 ZILENCER_ENABLED = 'zilencer' in INSTALLED_APPS
