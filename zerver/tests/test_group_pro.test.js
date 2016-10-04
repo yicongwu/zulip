@@ -1,42 +1,68 @@
 var request = require('supertest');
 var should = require('chai').should();
-
-const url = 'http://localhost:9991/group'
-const url_member = 'http://localhost:9991/group/member'
-const url_message = 'http://localhost:9991/group/messages'
-const url_user_message = 'http://localhost:9991/group/user_messages'
-const url_login = 'http://localhost:9991/accounts/login/'
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+const url = 'https://47.88.76.45/group'
+const url_member = 'https://47.88.76.45/group/member'
+const url_message = 'https://47.88.76.45/group/messages'
+const url_user_message = 'https://47.88.76.45/group/user_messages'
+const url_login = 'https://47.88.76.45/login/'
 
 var test1_sessionid
 var yicong_sessionid
+var yicong_csrf_token
+var test1_csrf_token
 //login two users
 describe('get yicong sessionid', function(){
-    it('dev_login POST', function(done){
+    it('admin_login_pwd GET', function(done){
         request(url_login)
-        .post('local/')
+        .get('')
         .set('Content-type','application/x-www-form-urlencoded')
-        .send('direct_email=yicong%40tijee.com')
         .expect(200)
-        .end(function(err, res){
+        .end(function(err,res){
+            yicong_csrf_token = res.header['set-cookie'][0].slice(10,42)
+            //console.log(res.header['set-cookie'][0].slice(9,43))
             done();
+        })
+    })
+    it('admin_login_pwd POST', function(done){
+        request(url_login)
+        .post('')
+        .set('Content-type','application/x-www-form-urlencoded')
+        .set('Cookie','csrftoken='+yicong_csrf_token)
+        .set('Referer',url_login)
+        .send('csrfmiddlewaretoken='+yicong_csrf_token+'&username=yicong%40tijee.com&password=1992117')
+        .expect(200)
+        .end(function(err,res){
             yicong_sessionid = res.header['set-cookie']
-            console.log(yicong_sessionid)
+            console.log(res.header['set-cookie'])
+            done();
         })
     })
 })
 
 describe('get test1 sessionid', function(){
-    it('pwd_login POST', function(done){
+    it('user_login_pwd GET', function(done){
+        request(url_login)
+        .get('')
+        .set('Content-type','application/x-www-form-urlencoded')
+        .expect(200)
+        .end(function(err,res){
+            test1_csrf_token = res.header['set-cookie'][0].slice(10,42)
+            //console.log(res.header['set-cookie'][0].slice(9,43))
+            done();
+        })
+    })
+    it('user_login_pwd POST', function(done){
         request(url_login)
         .post('')
         .set('Content-type','application/x-www-form-urlencoded')
-        .set('Cookie','csrftoken=9dpUvEjepCkt7zd8KroVekd7DzQSdpYU')
-        .send('csrfmiddlewaretoken=9dpUvEjepCkt7zd8KroVekd7DzQSdpYU&username=test1%40tijee.com&password=tijee%40test1')
+        .set('Referer',url_login)
+        .set('Cookie','csrftoken='+test1_csrf_token)
+        .send('csrfmiddlewaretoken='+test1_csrf_token+'&username=test1%40tijee.com&password=tijee%40test1')
         .expect(200)
         .end(function(err, res){
             done();
             test1_sessionid = res.header['set-cookie']
-            console.log(test1_sessionid)
         })
     })
 })
@@ -95,9 +121,9 @@ describe('group class tests', function(){
 //user = yicong@tijee.com  GET_yes ADD_yes DELETE_yes
 //user = test1@tijee.com    GET_yes ADD_no DELETE_no
 describe('group members tests', function(){
-    var user_id = 22
-    var group_id = 37
-    it('members GET owner', function(done){
+    var user_id = 10
+    var group_id = 1
+    it('members GET :owner', function(done){
         request(url_member)
         .get(`/${group_id}`)
         .set('Cookie', yicong_sessionid)
@@ -108,7 +134,7 @@ describe('group members tests', function(){
         })
     })
 
-    it('members GET non-member ', function(done){
+    it('members GET :non-member ', function(done){
         request(url_member)
         .get(`/${group_id}`)
         .set('Cookie', test1_sessionid)
@@ -119,7 +145,7 @@ describe('group members tests', function(){
         })
     })
 
-    it('member ADD owner', function(done){
+    it('member ADD :owner', function(done){
         request(url_member)
         .post('')
         .set('Cookie', yicong_sessionid)
@@ -130,7 +156,7 @@ describe('group members tests', function(){
         })
     })
 
-    it('members GET member', function(done){
+    it('members GET :member', function(done){
         request(url_member)
         .get(`/${group_id}`)
         .set('Cookie', test1_sessionid)
@@ -141,7 +167,7 @@ describe('group members tests', function(){
         })
     })
 
-    it('member ADD member', function(done){
+    it('member ADD :member', function(done){
         request(url_member)
         .post('')
         .set('Cookie', test1_sessionid)
@@ -163,7 +189,7 @@ describe('group members tests', function(){
         })
     })
 
-    it('member DELETE member', function(done){
+    it('member DELETE :member', function(done){
         request(url_member)
         .delete('')
         .set('Cookie', test1_sessionid)
@@ -174,7 +200,7 @@ describe('group members tests', function(){
         })
     })
 
-    it('member DELETE owner', function(done){
+    it('member DELETE :owner', function(done){
         request(url_member)
         .delete('')
         .set('Cookie',yicong_sessionid)
@@ -201,8 +227,7 @@ describe('group members tests', function(){
 //user_send = yicong@tijee.com
 //user_receive = test1@tijee.com
 describe('group messages tests', function(){
-    var user_id = 22
-    var group_id = 28
+    var group_id = 2
     var content = "sending test 1."
     //yicong@tijee.com  send the message
     it('messages POST', function(done){
@@ -211,6 +236,7 @@ describe('group messages tests', function(){
         .set('Cookie', yicong_sessionid)
         .send({"message_type_name":"group", "recipient_id":group_id, "message_content":content,"subject_name":"test"})
         .end(function(err, res){
+            //console.log(res)
             res.body.result.should.be.equal("success")
             done();
         })

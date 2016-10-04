@@ -40,7 +40,7 @@ def start_baidu_oauth2(request):
         'response_type': 'code',
         'client_id': settings.BAIDU_OAUTH_CLIENT_ID,
         'redirect_uri': ''.join((
-            settings.EXTERNAL_URI_SCHEME,#http://
+            settings.EXTERNAL_URI_SCHEME,#http://  or https://
             request.get_host(),#localhost:9991/
             reverse('zerver.views.baidu.finish_baidu_oauth2'),
         )),

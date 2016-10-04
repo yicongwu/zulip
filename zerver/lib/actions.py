@@ -951,8 +951,8 @@ def check_message(sender, client, message_type_name, message_to,
     if not message_to and message_type_name == 'stream' and sender.default_sending_stream:
         # Use the users default stream
         message_to = [sender.default_sending_stream.name]
-    elif message_type_name == 'group':
-        q=1
+    elif message_type_name == 'group':  #add group by yicong
+        pass
     elif len(message_to) == 0:
         raise JsonableError(_("Message must have recipients"))
     if len(message_content.strip()) == 0:
