@@ -23,7 +23,7 @@ SQLAlchemy==0.7.8
 # Needed for S3 file uploads
 boto==2.38.0
 
-certifi==2015.4.28
+certifi==2022.12.7
 cffi==1.5.2
 chardet==2.3.0
 
